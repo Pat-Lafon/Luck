@@ -45,6 +45,8 @@ import qualified Data.ByteString.Char8 as BS8
 import Core.Rigidify (DataTree)
 import qualified Core.Rigidify as Rigidify
 
+import Data.Time
+
 data RunMode = Single | Evaluate
   deriving (Eq, Show, Read, Typeable, Data)
 
@@ -115,7 +117,7 @@ handleIncludes :: String -> OAST.Decl -> IO [OAST.Decl]
 handleIncludes relPath (OAST.IncludeDecl fileName) = do
     newFile <- BS.readFile (relPath FN.</> (fileName ++ ".luck"))
     let pState = mkPState newFile (SrcLoc fileName 1 1)
-    newAst <- failEither $ runP parser pState 
+    newAst <- failEither $ runP parser pState
     handleAllInclusions relPath newAst
 handleIncludes _ x = return [x]
 
@@ -218,7 +220,10 @@ parse Flags{..} ast r = do
               Left _ -> aux cnt n
       in do
         g <- getStdGen
+        start <- getCurrentTime
         res <- aux 0 _evalTries
+        end <- getCurrentTime
+        putStrLn $ "Time: " ++ show (diffUTCTime end start)
         putStrLn $ show res
     Cont p ->
       let
